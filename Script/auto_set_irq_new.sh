@@ -1,7 +1,7 @@
 #!/bin/bash
-# author: dywang
+# author: Morse
 # date: 2020/04/03
-
+# email: wdy62808@gmail.com
 CPUS=`cat /proc/cpuinfo| grep "processor"| wc -l`
 RPS_LOW_BIT="ffffffff"
 RFS_MAX="32768"
