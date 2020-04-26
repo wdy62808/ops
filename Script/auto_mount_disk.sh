@@ -18,18 +18,15 @@ function SCAN {
 	Useless_Disk=`cat /tmp/mount.log | grep Useless | cut -d ' ' -f3`
 }
 function PART {
-	for i in ${Useless_Disk}
+	for dev in ${Useless_Disk}
 	do
 		echo -e "\033[36mFormating ${i}....\033]0m"
 	sleep 1
-	FDISK=`which fdisk`
-	${FDISK} ${i} &> /dev/null <<EOF
-n
-p
-1
-
-
-wq
+	parted ${dev} mklabel gpt <<EOF
+Yes
+EOF
+  parted ${dev} mkpart primary ext4 0 100% <<EOF
+Ignore
 EOF
 	echo -e "\033[32mDone\033[0m"
 	done
@@ -44,29 +41,32 @@ function MKFS {
 	done
 }
 function MOUNT {
-	for i in ${Useless_Disk}
+  i=1
+	for dev in ${Useless_Disk}
 	do
 		if [ ! -d /data ];then
 			mkdir /data
-			UUID_NUM=`blkid | grep "${i}1" | cut -d ' ' -f2`
+			UUID_NUM=`blkid | grep "${dev}1" | cut -d ' ' -f2`
 			echo "${UUID_NUM} /data	ext4	defaults 0 0" >> /etc/fstab
 			mount -a
-			[ $? -eq 0 ] && echo "${i} Mount Finished." 
+			[ $? -eq 0 ] && echo "${dev} Mount Finished."
 		else
-			read -p "/data in uesd,Input new mount point:" NEW_POINT
+			NEW_POINT="/data"${i}
 			if [ -d ${NEW_POINT} ];then
-				read -p "${NEW_POINT} in uesd,Input new mount point again:" NEW_POINT
+			  let i=$i+1
+			  NEW_POINT="/data"${i}
 				mkdir ${NEW_POINT}
-				UUID_NUM=`blkid | grep "${i}1" | cut -d ' ' -f2`
+				UUID_NUM=`blkid | grep "${dev}1" | cut -d ' ' -f2`
 				echo "${UUID_NUM} ${NEW_POINT}	ext4	defaults 0 0" >> /etc/fstab
 				mount -a
-				[ $? -eq 0 ] && echo "${i} Mount Finished." 
+				[ $? -eq 0 ] && echo "${dev} Mount Finished."
 			else
 				mkdir ${NEW_POINT}
-				UUID_NUM=`blkid | grep "${i}1" | cut -d ' ' -f2`
+				let i=$i+1
+				UUID_NUM=`blkid | grep "${dev}1" | cut -d ' ' -f2`
 				echo "${UUID_NUM} ${NEW_POINT}	ext4	defaults 0 0" >> /etc/fstab
 				mount -a
-				[ $? -eq 0 ] && echo "${i} Mount Finished." 
+				[ $? -eq 0 ] && echo "${dev} Mount Finished."
 			fi
 		fi
 	done
