@@ -6,6 +6,7 @@ CPUS=`cat /proc/cpuinfo| grep "processor"| wc -l`
 RPS_LOW_BIT="ffffffff"
 RFS_MAX="32768"
 is_start_irqbalance=0
+SYSTEM=`rpm -q centos-release|cut -d- -f3`
 
 #根据CPU数确定 RPS设置的CPU掩码
 if [ $CPUS  -ge 32 ];then
@@ -15,12 +16,19 @@ else
     RPS_LOW_BIT=$(printf %x $num)  #转换为十六进制
 fi
 
+
 # check for irqbalance running
 IRQBALANCE_ON=`ps ax | grep -v grep | grep -q irqbalance; echo $?`
-if [ "$IRQBALANCE_ON" == "0" ] ; then
-    echo "'killall irqbalance'"
-    /etc/init.d/irqbalance stop
+if [ "$IRQBALANCE_ON" == "0" ];then
+	if [ "$SYSTEM" == "6" ];then
+		/etc/init.d/irqbalance stop
+	elif [ "$SYSTEM" == "7" ];then
+		systemctl stop irqbalance
+	else
+		echo "系统版本获取错误,请检查" && exit 1
+	fi
 fi
+
 
 #设置网卡多队列、接受queuei的开启数为当前机器支持的最大数
 function set_multiple_queues(){
@@ -127,9 +135,16 @@ done
 if [ ${is_start_irqbalance} -gt 0 ];then
     echo "4、执行托底操作开启irqbanlance"
     #is_start_irqbalance 如果此参数大于0，表明所有支持多队列的网卡都无法通过`grep "${dev}-" /proc/interrupts`获取到硬件中断信息，目前解决方式是开启irqbanlance服务
-    yum install -y irqbalance
-    /etc/init.d/irqbalance start
-    if [ $? -eq 0 ];then
+    yum install -y irqbalance >/dev/null
+    if [ "$SYSTEM" == "6" ];then
+		/etc/init.d/irqbalance start
+	elif [ "$SYSTEM" == "7" ];then
+		systemctl start irqbalance
+	else
+		echo "系统版本获取错误,请检查" && exit 1
+	fi
+	IRQBALANCE_ON=`ps ax | grep -v grep | grep -q irqbalance; echo $?`
+    if [ "$IRQBALANCE_ON" -eq "0" ];then
         echo "托底操作 irqbanlance 开启服务 成功"
     else
         echo "托底操作 irqbanlance 开启服务 失败"
