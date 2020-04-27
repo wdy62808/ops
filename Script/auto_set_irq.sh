@@ -145,9 +145,9 @@ if [ ${is_start_irqbalance} -gt 0 ];then
 	fi
 	IRQBALANCE_ON=`ps ax | grep -v grep | grep -q irqbalance; echo $?`
     if [ "$IRQBALANCE_ON" -eq "0" ];then
-        echo "托底操作 irqbanlance 开启服务 成功"
+        echo "托底操作 irqbalance 开启服务 成功"
     else
-        echo "托底操作 irqbanlance 开启服务 失败"
+        echo "托底操作 irqbalance 开启服务 失败"
     fi   
 else
     echo "4、无需执行托底操作"
