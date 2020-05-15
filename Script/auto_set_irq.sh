@@ -1,5 +1,5 @@
 #!/bin/bash
-# author: dywang
+# author: morse
 # date: 2020/04/03
 
 CPUS=`cat /proc/cpuinfo| grep "processor"| wc -l`
