@@ -12,7 +12,7 @@ tar xzvf ${pkg_py3} -C /opt/ >>/dev/null && echo "解压python3文件 Succ" || (
 echo "编译安装python3"
 cd /opt/Python-3.6.8 || echo "/opt/Python-3.6.8目录不存在"
 ./configure --prefix=${install_py3_dir} >>/dev/null && echo "configure python3 Succ" || (echo "configure python3 finished Error" && exit 1)
-make >>/dev/null && echo "编译python3 Succ"|| echo "编译 python3 Error"
+make -j16 >>/dev/null && echo "编译python3 Succ"|| echo "编译 python3 Error"
 make install >>/dev/null && echo "安装python3 Succ" || echo "安装 python3 Error"
 
 [ -f /usr/local/bin/python3 ] && mv /usr/local/bin/python3 /usr/local/bin/python3_old

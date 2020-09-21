@@ -44,7 +44,10 @@ function MOUNT {
   i=1
 	for dev in ${Useless_Disk}
 	do
-		if [ ! -d /data ];then
+	    res=`du --max-depth=0 -h /data | awk '{print $1}'|sed 's/G//g'||echo 0`
+		m_res=`lsblk |grep /data`
+		if [ ! -d /data -o $res -lt 5 ] && [[ ! "${m_res}" ]];then
+		    rm -rf /data && echo "删除data目录"||echo "没有data目录"
 			mkdir /data
 			UUID_NUM=`blkid | grep "${dev}1" | cut -d ' ' -f2`
 			echo "${UUID_NUM} /data	ext4	defaults 0 0" >> /etc/fstab
