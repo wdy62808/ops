@@ -55,24 +55,31 @@ function set_multiple_queues(){
         else
             echo "Dev:${dev} $check 当前开启的多队列数和允许队列数一致 不设置"
         fi
-    done
-
-    pre_rx_queues=`ethtool -g ${dev}|grep "RX:"|sed -n 1p|grep -Eo '([0-9]+)' 2>/dev/null`
-    cur_rx_queues=`ethtool -g ${dev}|grep "RX:"|sed -n 2p|grep -Eo '([0-9]+)' 2>/dev/null`
-    set_rx_num=$((pre_rx_queues>=cur_rx_queues ?pre_rx_queues:cur_rx_queues))
-    echo "设置 Dev:${dev} Rx queue"
-    if [ $pre_rx_queues -ne $cur_rx_queues ];then
-         ethtool -G ${dev} rx $set_rx_num
-         if [ $? -eq 0 ];then
-             echo -e "Dev:${dev} RX queue ${set_rx_num} 设置成功\n 'ethtool -G ${dev} rx $set_rx_num'"
-         else
-             echo -e "Dev:${dev} RX queue ${set_rx_num} 设置失败\n 'ethtool -G ${dev} rx $set_rx_num'"
-         fi
-     else
-         echo -e "Dev:${dev} RX queue ${set_rx_num} 已经最大 不设置"
-     fi     
+    done   
 }
 
+function set_ring_buffer(){
+    dev=$1
+    checks=('RX' 'TX')
+    for check in ${checks[@]}
+    do
+        pre_rx_queues=`ethtool -g ${dev}|grep "${check}:"|sed -n 1p|grep -Eo '([0-9]+)' 2>/dev/null`
+        cur_rx_queues=`ethtool -g ${dev}|grep "${check}:"|sed -n 2p|grep -Eo '([0-9]+)' 2>/dev/null`
+        set_rx_num=$((pre_rx_queues>=cur_rx_queues ?pre_rx_queues:cur_rx_queues))
+        echo "设置 Dev:${dev} ${check} queue"
+        if [ $pre_rx_queues -ne $cur_rx_queues ];then
+             set_mode=`echo $check|tr 'A-Z' 'a-z'`
+             ethtool -G ${dev} $set_mode $set_rx_num
+             if [ $? -eq 0 ];then
+                 echo -e "Dev:${dev} $check queue ${set_rx_num} 设置成功\n 'ethtool -G ${dev} $set_mode $set_rx_num'"
+             else
+                 echo -e "Dev:${dev} $check queue ${set_rx_num} 设置失败\n 'ethtool -G ${dev} $set_mode $set_rx_num'"
+             fi
+         else
+             echo -e "Dev:${dev} $check queue ${set_rx_num} 已经最大 不设置"
+         fi
+     done
+}
 
 #设置网卡的RPS、RFS属性 --- 软中断 cat /proc/softirqs
 function set_rps_and_rfs()
@@ -130,10 +137,12 @@ do
     done
     echo "3、设置Dev:${dev} RPS、RFS属性"
     set_rps_and_rfs $dev $irq_nums
+	echo "4、设置ring_buffer"
+    set_ring_buffer $dev
 done
 
 if [ ${is_start_irqbalance} -gt 0 ];then
-    echo "4、执行托底操作开启irqbanlance"
+    echo "5、执行托底操作开启irqbanlance"
     #is_start_irqbalance 如果此参数大于0，表明所有支持多队列的网卡都无法通过`grep "${dev}-" /proc/interrupts`获取到硬件中断信息，目前解决方式是开启irqbanlance服务
     yum install -y irqbalance >/dev/null
     if [ "$SYSTEM" == "6" ];then
